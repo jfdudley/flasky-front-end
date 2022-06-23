@@ -3,6 +3,7 @@ import "./App.css";
 import CatList from "./components/CatList";
 import axios from "axios";
 // import catDataJson from './data/catData.json';
+import NewCatForm from "./components/NewCatForm";
 
 const kBaseUrl = 'http://localhost:5000';
 
@@ -40,6 +41,20 @@ const removeCat = id => {
     throw new Error(`error removing cat ${id}`);
   })  // promise 3
 };
+
+const registerCat = catData => {
+  const requestBody = { ...catData, pet_count: 0 };
+
+  return axios.post(`${kBaseUrl}/cats`, requestBody) // promise1
+  .then(response => {
+    return catApiToJson(response.data);
+  })  // promise 2
+  .catch(err => {
+    console.log(err);
+    throw new Error('error registering cat');
+  })  // promise 3
+};
+
 
 
 function App() {
@@ -97,12 +112,27 @@ function App() {
     return total + cat.petCount;
   }, 0);
 
+  const handleCatDataReady = (formData) => {
+    console.log(formData);
+    registerCat(formData)
+    .then(newCat => {
+      // const newData = [ ...catData, newCat ];
+      // setCatData(newData);
+      setCatData(oldData => [ ...oldData, newCat ]);
+      // setCatData(oldData => [ ...oldData, newCat ]);
+    })
+    .catch(err => {
+      console.log(err.message);
+    });
+  };
+
   return (
     <main>
       <h1>
         <div>List of Cats</div>
         <div>Total pets: {totalPets}</div>
       </h1>
+      <NewCatForm onCatDataReady={handleCatDataReady} />
       <CatList 
         catData={catData} 
         onPetCat={updateCat} 
