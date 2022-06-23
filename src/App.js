@@ -12,7 +12,7 @@ const catApiToJson = cat => {
   return { caretaker, color, id, name, personality, petCount };
 };
 
-const getCats = () => {
+const getCatsAsync = () => {
   return axios.get(`${kBaseUrl}/cats`) // promise1
   .then(response => {
     return response.data.map(catApiToJson);
@@ -23,7 +23,7 @@ const getCats = () => {
   })  // promise 3
 };
 
-const petCat = id => {
+const petCatAsync = id => {
   return axios.patch(`${kBaseUrl}/cats/${id}/pet`) // promise1
   .then(response => {
     return catApiToJson(response.data);
@@ -34,7 +34,7 @@ const petCat = id => {
   })  // promise 3
 };
 
-const removeCat = id => {
+const removeCatAsync = id => {
   return axios.delete(`${kBaseUrl}/cats/${id}`) // promise1
   .catch(err => {
     console.log(err);
@@ -42,7 +42,7 @@ const removeCat = id => {
   })  // promise 3
 };
 
-const registerCat = catData => {
+const registerCatAsync = catData => {
   const requestBody = { ...catData, pet_count: 0 };
 
   return axios.post(`${kBaseUrl}/cats`, requestBody) // promise1
@@ -61,7 +61,7 @@ function App() {
   const [ catData, setCatData ] = useState([]);
 
   const updateCats = () => {
-    getCats()
+    getCatsAsync()
     .then(cats => {
       setCatData(cats);
     })
@@ -76,7 +76,7 @@ function App() {
   
   const updateCat = (id) => {
     // console.log(`cat id ${id} says purr!`);
-    petCat(id)
+    petCatAsync(id)
     .then(updatedCat => {
       setCatData(oldData => {
         return oldData.map(cat => {
@@ -95,7 +95,7 @@ function App() {
 
   const unregisterCat = id => {
     // console.log(`unregister cat id ${id}`)
-    removeCat(id)
+    removeCatAsync(id)
     .then(cat => {  
       setCatData(oldData => {
         return oldData.filter(cat => {
@@ -108,22 +108,37 @@ function App() {
     });
   };
 
+  const registerCat = catData => {
+    registerCatAsync(catData)
+    .then(newCat => {
+      // With the functional style of the set state functions, the current
+      // state value is passed in as an input parameter, which here we named
+      // oldData
+      
+      setCatData(oldData => [ ...oldData, newCat ]);
+
+      // Could have been written as follows:
+      //
+      // const newData = [ ...catData, newCat ];
+      // setCatData(newData);
+      //
+      // But especially when async code is involved, the functional style
+      // of setting state, where we pass in an update function rather than
+      // the actual value, tends to be more robust to asynchronous code
+      // when multiple things could be occurring simultaneously
+    })
+    .catch(err => {
+      console.log(err.message);
+    });
+  };
+
   const totalPets = catData.reduce((total, cat) => {
     return total + cat.petCount;
   }, 0);
 
   const handleCatDataReady = (formData) => {
     console.log(formData);
-    registerCat(formData)
-    .then(newCat => {
-      // const newData = [ ...catData, newCat ];
-      // setCatData(newData);
-      setCatData(oldData => [ ...oldData, newCat ]);
-      // setCatData(oldData => [ ...oldData, newCat ]);
-    })
-    .catch(err => {
-      console.log(err.message);
-    });
+    registerCat(formData);
   };
 
   return (
